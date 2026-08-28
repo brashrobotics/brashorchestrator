@@ -1,0 +1,19 @@
+# Replace the world model with a scenario definition. Optionally ground the
+# locations against a published Twin Studio map bundle.
+
+string scenario_path
+
+# Optional path to a brash.twin-map-bundle/v2 directory or manifest. When set,
+# location identifiers are resolved to fleet map coordinates.
+string twin_bundle_path
+
+bool replace_existing
+---
+bool success
+string message
+uint16 location_count
+uint16 object_count
+uint16 robot_count
+
+# Locations the scenario declares that the twin bundle could not ground.
+string[] ungrounded_location_ids

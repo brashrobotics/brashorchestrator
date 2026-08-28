@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "brash.task-request/v1",
+  "title": "Brash task request",
+  "description": "Operator intent as submitted by the UI, REST gateway, or the ExecuteTask ROS 2 action.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_id", "goal"],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.:-]+$"
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 2000,
+      "description": "Natural-language goal."
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "deadline_s": { "type": "number", "exclusiveMinimum": 0, "maximum": 86400 },
+        "max_risk": { "enum": ["low", "medium", "high"] },
+        "allow_teleoperation": { "type": "boolean" },
+        "preferred_handover_location": { "type": "string", "maxLength": 96 },
+        "allowed_robot_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "maxLength": 96 },
+          "description": "When present, the scheduler may only consider these robots."
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Plan, validate, assign, and report without submitting any work order."
+        }
+      }
+    }
+  }
+}

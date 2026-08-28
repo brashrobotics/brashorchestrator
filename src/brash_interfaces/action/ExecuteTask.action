@@ -1,0 +1,24 @@
+# Execute one natural-language goal end to end: interpret, validate, assign,
+# execute through the fleet, and verify the goal predicate.
+
+# Goal
+string task_id
+string natural_language_goal
+# brash.task-request/v1 "constraints" object, serialized.
+string constraints_json
+---
+# Result
+bool success
+# brash.execution-result/v1, serialized.
+string final_state_json
+# One of the brash.execution-event/v1 error codes. "SUCCESS" when success is true.
+string failure_code
+string summary
+---
+# Feedback
+string execution_state
+string active_node_id
+string assigned_robot_id
+float32 progress
+# brash.execution-event/v1, serialized.
+string event_json

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "brash.execution-result/v1",
+  "title": "Brash execution result",
+  "description": "Terminal report for one task. Success is only ever reported when the goal predicate was physically verified.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "success",
+    "failure_code",
+    "goal_predicate",
+    "goal_verified",
+    "summary",
+    "started_at",
+    "finished_at",
+    "duration_s",
+    "nodes",
+    "events"
+  ],
+  "properties": {
+    "task_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "success": { "type": "boolean" },
+    "failure_code": { "type": "string", "maxLength": 64 },
+    "goal_predicate": { "type": "string", "maxLength": 256 },
+    "goal_verified": {
+      "type": "boolean",
+      "description": "True only when an observation, not a backend claim, established the goal predicate."
+    },
+    "summary": { "type": "string", "maxLength": 4000 },
+    "dry_run": { "type": "boolean" },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": "string", "format": "date-time" },
+    "duration_s": { "type": "number", "minimum": 0 },
+    "human_interventions": { "type": "integer", "minimum": 0 },
+    "recovery_actions": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["node_id", "action", "state", "error_code"],
+        "properties": {
+          "node_id": { "type": "string", "maxLength": 32 },
+          "action": { "type": "string", "maxLength": 96 },
+          "assigned_robot_id": { "type": ["string", "null"], "maxLength": 96 },
+          "state": {
+            "enum": ["PENDING", "RUNNING", "SUCCEEDED", "FAILED", "SKIPPED", "CANCELLED"]
+          },
+          "error_code": { "type": "string", "maxLength": 64 },
+          "attempts": { "type": "integer", "minimum": 0 },
+          "duration_s": { "type": "number", "minimum": 0 },
+          "external_reference": { "type": ["string", "null"], "maxLength": 200 }
+        }
+      }
+    },
+    "final_world_state": { "type": "object" },
+    "events": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  }
+}

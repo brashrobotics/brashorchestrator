@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "brash.recovery-proposal/v1",
+  "title": "Brash recovery proposal",
+  "description": "The LLM ranks a closed set of candidate options supplied by the recovery planner. It selects by candidate_id and can never introduce a new action.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["selected_candidate_id", "confidence", "reason"],
+  "properties": {
+    "selected_candidate_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Must equal the candidate_id of one option the planner offered."
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "reason": { "type": "string", "minLength": 1, "maxLength": 600 },
+    "ranked_candidate_ids": {
+      "type": "array",
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": { "type": "string", "maxLength": 64 },
+      "description": "Optional full ranking, best first, used as fallback order when the first choice also fails."
+    }
+  }
+}

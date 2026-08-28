@@ -1,0 +1,44 @@
+# Safety policy.
+#
+# These rules are enforced by brash_safety_manager, which never consults the LLM
+# and accepts no override from a generated plan. Every value below is a
+# structural example and must be replaced with the site risk assessment before
+# any hardware run.
+#
+# IMPORTANT: this layer is not a safety-certified system. It reduces the chance
+# of a bad command being submitted. It does not replace a certified low-level
+# controller, a certified safety scanner, or a physical emergency stop, and it
+# must never be treated as the last line of defence.
+
+enabled: true
+
+# Payload ceiling applied on top of each robot's own capability limit. Whichever
+# is lower wins.
+global_max_payload_kg: 15.0
+
+# A human detected closer than this stops manipulation. Distance comes from the
+# world model, which is fed by the fleet and by robot telemetry.
+human_clearance_m:
+  transport: 1.5
+  manipulation: 2.0
+  perception: 0.5
+
+zones:
+  # Zones no orchestrated work may enter.
+  forbidden: []
+  # Zones that need an explicit operator approval per task.
+  approval_required: [high_bay, laboratory]
+  # Zones where only these primitives are allowed.
+  restricted:
+    laboratory: [verify_object_pose, inspect_target_shelf, locate_object]
+
+# Primitives that always need a named operator approval, regardless of zone.
+approval_required_primitives: [request_teleoperation]
+
+# Refuse to submit work to a robot below this battery level. Fleet Control also
+# enforces its own charging policy; this is a second, independent floor.
+min_battery_percent: 20.0
+
+# Maximum concurrent work orders the orchestrator may have in flight. Bounds the
+# blast radius of a planning error.
+max_concurrent_primitives: 4

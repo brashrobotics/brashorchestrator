@@ -1,0 +1,234 @@
+# Action Library.
+#
+# A capability says what a robot can generally do. An action is an executable,
+# parameterized, verifiable primitive. Anything the LLM emits that is not
+# defined here is rejected by the validator before execution.
+#
+# Field reference
+#   required_capabilities  robot-independent capability names the scheduler matches
+#   parameters             parameter name -> type (object_id, location_id, number, boolean)
+#   preconditions          predicates that must hold in the world model before execution
+#   effects                predicates asserted once execution is verified
+#   verification           predicate that an observation must establish; when absent,
+#                          the effects are provisional and the monitor flags a mismatch
+#   timeout_s              hard per-attempt timeout
+#   execution.kind         transport | manipulation | perception
+#   execution.fleet_capabilities  canonical Fleet Control capability names requested
+#                          on the work order (see brashfleetcontrol canonical actions)
+#   hazardous              requires explicit operator approval before execution
+#
+# The "assigned_robot" token in a predicate is substituted with the robot the
+# scheduler assigned to that node.
+
+actions:
+  locate_object:
+    required_capabilities: [detect_container]
+    parameters:
+      object_id: object_id
+    preconditions:
+      - object_exists(object_id)
+    effects:
+      - pose_known(object_id)
+    verification: pose_known(object_id)
+    timeout_s: 120
+    execution:
+      kind: perception
+      primitive: locate_object
+      # The robot travels to the object's last believed location to look for it.
+      station_from: object_id
+      object_from: object_id
+      fleet_capabilities: [inspection]
+
+  inspect_target_shelf:
+    required_capabilities: [verify_object_pose]
+    parameters:
+      shelf_id: location_id
+    preconditions:
+      - location_exists(shelf_id)
+      - sensor_view_available(shelf_id)
+    effects:
+      - inspected(shelf_id)
+    verification: inspected(shelf_id)
+    timeout_s: 120
+    execution:
+      kind: perception
+      primitive: inspect_target_shelf
+      station_from: shelf_id
+      fleet_capabilities: [inspection]
+
+  transport_container:
+    required_capabilities:
+      - navigate
+      - grasp_container
+      - transport_container
+      - place_at_handover
+    parameters:
+      container_id: object_id
+      destination: location_id
+    preconditions:
+      - object_exists(container_id)
+      - object_type(container_id, container)
+      - pose_known(container_id)
+      - robot_reachable(container_id)
+      - mass_within_limit(container_id)
+      - route_available(destination)
+    effects:
+      - at(container_id, destination)
+      - released(container_id)
+      - lid_accessible(container_id)
+    verification: at(container_id, destination)
+    timeout_s: 420
+    execution:
+      kind: transport
+      primitive: transport_container
+      pickup_from: container_id
+      dropoff_to: destination
+      payload_from: container_id
+      fleet_capabilities: [material_transport]
+
+  reposition_container:
+    required_capabilities:
+      - navigate
+      - grasp_container
+      - reposition_container
+    parameters:
+      container_id: object_id
+      yaw_change_deg: number
+    preconditions:
+      - object_exists(container_id)
+      - object_type(container_id, container)
+      - pose_known(container_id)
+      - robot_reachable(container_id)
+      - mass_within_limit(container_id)
+    effects:
+      - lid_accessible(container_id)
+    verification: lid_accessible(container_id)
+    timeout_s: 240
+    execution:
+      kind: manipulation
+      primitive: reposition_container
+      station_from: container_id
+      fleet_capabilities: [material_transport]
+
+  open_container:
+    required_capabilities: [open_container]
+    parameters:
+      container_id: object_id
+    preconditions:
+      - at_robot_near(container_id)
+      - state(container_id, closed)
+      - lid_accessible(container_id)
+    effects:
+      - state(container_id, open)
+      - contents_visible(container_id)
+    verification: state(container_id, open)
+    timeout_s: 120
+    execution:
+      kind: manipulation
+      primitive: open_container
+      station_from: container_id
+      fleet_capabilities: [inspection]
+
+  detect_tool_in_container:
+    required_capabilities: [detect_tool_in_container]
+    parameters:
+      object_id: object_id
+      container_id: object_id
+    preconditions:
+      - inside(object_id, container_id)
+      - state(container_id, open)
+    effects:
+      - pose_known(object_id)
+      - grasp_region_visible(object_id)
+    verification: grasp_region_visible(object_id)
+    timeout_s: 90
+    execution:
+      kind: perception
+      primitive: detect_tool_in_container
+      station_from: container_id
+      object_from: object_id
+      container_from: container_id
+      fleet_capabilities: [inspection]
+
+  pick_tool_from_container:
+    required_capabilities:
+      - detect_tool_in_container
+      - pick_tool_from_container
+    parameters:
+      object_id: object_id
+      container_id: object_id
+    preconditions:
+      - inside(object_id, container_id)
+      - state(container_id, open)
+      - contents_visible(container_id)
+      - mass_within_limit(object_id)
+    effects:
+      - held_by(object_id, assigned_robot)
+      - not_inside(object_id, container_id)
+    verification: held_by(object_id, assigned_robot)
+    timeout_s: 120
+    execution:
+      kind: manipulation
+      primitive: pick_tool_from_container
+      station_from: container_id
+      object_from: object_id
+      container_from: container_id
+      fleet_capabilities: [inspection]
+
+  place_object_on_shelf:
+    required_capabilities: [place_object_on_shelf]
+    parameters:
+      object_id: object_id
+      shelf_id: location_id
+    preconditions:
+      - held_by(object_id, assigned_robot)
+      - shelf_has_free_space(shelf_id)
+      - shelf_height_supported(shelf_id)
+      - route_available(shelf_id)
+    effects:
+      - on(object_id, shelf_id)
+      - not_held(object_id)
+    verification: on(object_id, shelf_id)
+    timeout_s: 120
+    execution:
+      kind: manipulation
+      primitive: place_object_on_shelf
+      station_from: shelf_id
+      object_from: object_id
+      fleet_capabilities: [inspection]
+
+  verify_object_pose:
+    required_capabilities: [verify_object_pose]
+    parameters:
+      object_id: object_id
+      expected_location: location_id
+    preconditions:
+      - sensor_view_available(expected_location)
+    effects:
+      - verified_at(object_id, expected_location)
+    verification: verified_at(object_id, expected_location)
+    timeout_s: 30
+    execution:
+      kind: perception
+      primitive: verify_object_pose
+      station_from: expected_location
+      object_from: object_id
+      fleet_capabilities: [inspection]
+
+  request_teleoperation:
+    required_capabilities: [navigate]
+    parameters:
+      object_id: object_id
+      reason: object_id
+    preconditions:
+      - object_exists(object_id)
+    effects:
+      - teleoperation_completed(object_id)
+    verification: teleoperation_completed(object_id)
+    timeout_s: 900
+    hazardous: true
+    execution:
+      kind: manipulation
+      primitive: request_teleoperation
+      object_from: object_id
+      fleet_capabilities: [inspection]

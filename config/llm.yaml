@@ -1,0 +1,77 @@
+# Local LLM configuration.
+#
+# Every profile targets a locally served, OpenAI-compatible endpoint. No profile
+# points at a hosted API; nothing leaves the site network.
+#
+# Constrained decoding styles
+#   vllm       extra_body {"guided_json": <schema>}      vLLM OpenAI server
+#   nim        extra_body {"nvext": {"guided_json": ...}} NVIDIA NIM
+#   ollama     {"format": <schema>}                       Ollama
+#   json_object {"response_format": {"type": "json_object"}} weakest fallback
+#   auto       probe the endpoint once and pick the strongest style it accepts
+#
+# Environment overrides, applied on top of the selected profile:
+#   ORCH_LLM_PROFILE, ORCH_LLM_BASE_URL, ORCH_LLM_MODEL, ORCH_LLM_API_KEY,
+#   ORCH_LLM_DECODING, ORCH_LLM_TIMEOUT_S
+
+active_profile: cosmos_reason
+
+profiles:
+  # NVIDIA Cosmos Reason is a physical-AI reasoning model, which is the closest
+  # fit for judging embodiment, reachability, and failure semantics.
+  cosmos_reason:
+    provider: openai_compat
+    base_url: http://127.0.0.1:8000/v1
+    model: nvidia/cosmos-reason1-7b
+    decoding: auto
+    temperature: 0.0
+    top_p: 1.0
+    max_tokens: 2048
+    timeout_s: 120.0
+    # Bounded repair attempts using validator feedback.
+    max_repair_attempts: 2
+
+  qwen_local:
+    provider: openai_compat
+    base_url: http://127.0.0.1:8000/v1
+    model: Qwen/Qwen3-8B
+    decoding: vllm
+    temperature: 0.0
+    top_p: 1.0
+    max_tokens: 2048
+    timeout_s: 120.0
+    max_repair_attempts: 2
+
+  nim:
+    provider: openai_compat
+    base_url: http://127.0.0.1:8000/v1
+    model: nvidia/llama-3.3-nemotron-super-49b-v1
+    decoding: nim
+    temperature: 0.0
+    max_tokens: 2048
+    timeout_s: 180.0
+    max_repair_attempts: 2
+
+  ollama:
+    provider: openai_compat
+    base_url: http://127.0.0.1:11434/v1
+    model: qwen3:8b
+    decoding: ollama
+    temperature: 0.0
+    max_tokens: 2048
+    timeout_s: 180.0
+    max_repair_attempts: 2
+
+  # Deterministic replay of prompts/task_graph_examples.jsonl. Used by tests and
+  # by offline demos so a green test run never depends on a model being up.
+  mock:
+    provider: mock
+    examples_path: prompts/task_graph_examples.jsonl
+    max_repair_attempts: 2
+
+prompts:
+  task_interpreter_system: prompts/task_interpreter_system.md
+  recovery_system: prompts/recovery_system.md
+  examples: prompts/task_graph_examples.jsonl
+  # Few-shot examples included in the interpreter prompt.
+  max_examples: 2

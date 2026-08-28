@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "brash.execution-event/v1",
+  "title": "Brash execution event",
+  "description": "Single normalized event emitted for every state change during execution. Every backend maps its vendor errors onto this closed error-code set.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_id", "node_id", "event", "error_code", "occurred_at"],
+  "properties": {
+    "task_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "node_id": { "type": "string", "minLength": 1, "maxLength": 32 },
+    "robot_id": { "type": ["string", "null"], "maxLength": 96 },
+    "action": { "type": ["string", "null"], "maxLength": 96 },
+    "event": { "$ref": "#/$defs/event_kind" },
+    "error_code": { "$ref": "#/$defs/error_code" },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "attempt": { "type": "integer", "minimum": 1, "maximum": 32 },
+    "detail": { "type": "string", "maxLength": 2000 },
+    "external_reference": {
+      "type": ["string", "null"],
+      "maxLength": 200,
+      "description": "Correlating Fleet Control work-order or workflow identifier."
+    },
+    "observations": {
+      "type": "object",
+      "description": "Backend-reported observations used by the monitor and the recovery planner."
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": { "type": "number" },
+      "description": "Duration, energy, and other measured quantities."
+    }
+  },
+  "$defs": {
+    "event_kind": {
+      "enum": [
+        "TASK_ACCEPTED",
+        "TASK_REJECTED",
+        "GRAPH_GENERATED",
+        "GRAPH_VALIDATED",
+        "GRAPH_REJECTED",
+        "PLAN_ASSIGNED",
+        "NODE_STARTED",
+        "NODE_SUCCEEDED",
+        "NODE_FAILED",
+        "NODE_SKIPPED",
+        "NODE_CANCELLED",
+        "EFFECT_VERIFIED",
+        "EFFECT_MISMATCH",
+        "RECOVERY_PROPOSED",
+        "RECOVERY_APPLIED",
+        "RECOVERY_EXHAUSTED",
+        "SAFETY_BLOCKED",
+        "APPROVAL_REQUIRED",
+        "TASK_SUCCEEDED",
+        "TASK_FAILED",
+        "TASK_CANCELLED"
+      ]
+    },
+    "error_code": {
+      "description": "Section 14 of the reference architecture. Closed set, shared by every backend.",
+      "enum": [
+        "SUCCESS",
+        "PRECONDITION_FAILED",
+        "OBJECT_NOT_FOUND",
+        "OBJECT_POSE_UNCERTAIN",
+        "GRASP_FAILED",
+        "SLIP_DETECTED",
+        "PATH_BLOCKED",
+        "TARGET_OCCUPIED",
+        "LID_NOT_ACCESSIBLE",
+        "PAYLOAD_LIMIT_EXCEEDED",
+        "HUMAN_IN_SAFETY_ZONE",
+        "COMMUNICATION_LOST",
+        "TIMEOUT",
+        "ROBOT_FAULT",
+        "UNKNOWN_FAILURE",
+        "VALIDATION_FAILED",
+        "SAFETY_POLICY_VIOLATION",
+        "NO_CAPABLE_ROBOT",
+        "CANCELLED",
+        "BACKEND_UNSUPPORTED"
+      ]
+    }
+  }
+}

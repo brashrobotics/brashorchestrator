@@ -1,0 +1,100 @@
+# Capability registry.
+#
+# WARNING: every payload, reach, tolerance, and success_prior below is a
+# structural example only. Before any hardware run these must be replaced with
+# manufacturer limits, the as-built mechanical integration, and controlled test
+# results. success_prior values start as engineering estimates and should be
+# replaced by a context-dependent success model learned from real trials.
+
+robots:
+  b2w_z1_01:
+    type: mobile_manipulator
+    vendor: unitree
+    # Fleet Control robot identifier. The orchestrator never commands the robot
+    # directly; it names the robot so the fleet can honour a soft preference.
+    fleet_robot_id: b2w_z1_01
+    frame_id: b2w_z1_01/base_link
+    status_topic: /brash/robots/b2w_z1_01/state
+    # Namespace used by brashembodiedcontroller for this platform. Telemetry
+    # only; no command topic is ever published by the orchestrator.
+    embodied_namespace: b2_unit_001
+    energy_per_second_wh: 0.24
+    capabilities:
+      navigate:
+        enabled: true
+        success_prior: 0.97
+        terrain: [flat, ramp, rough_ground, stairs]
+      detect_container:
+        enabled: true
+        success_prior: 0.9
+        supported_types: [tote, tool_box]
+      grasp_container:
+        enabled: true
+        max_mass_kg: 12.0
+        success_prior: 0.88
+      transport_container:
+        enabled: true
+        max_mass_kg: 12.0
+        success_prior: 0.94
+      place_at_handover:
+        enabled: true
+        pose_tolerance_m: 0.05
+        yaw_tolerance_deg: 8.0
+        success_prior: 0.91
+      reposition_container:
+        enabled: true
+        max_mass_kg: 12.0
+        success_prior: 0.85
+      open_container:
+        enabled: false
+      pick_tool_from_container:
+        enabled: false
+      place_object_on_shelf:
+        enabled: false
+      verify_object_pose:
+        enabled: false
+
+  g1_brainco_01:
+    type: humanoid
+    vendor: unitree_brainco
+    fleet_robot_id: g1_brainco_01
+    frame_id: g1_brainco_01/pelvis
+    status_topic: /brash/robots/g1_brainco_01/state
+    embodied_namespace: g1_unit_001
+    energy_per_second_wh: 0.31
+    capabilities:
+      navigate:
+        enabled: true
+        success_prior: 0.93
+        terrain: [flat, ramp]
+      open_container:
+        enabled: true
+        success_prior: 0.82
+        supported_lids: [hinged, loose_cover]
+      detect_tool_in_container:
+        enabled: true
+        success_prior: 0.88
+        supported_objects: [drill, screwdriver, wrench]
+      pick_tool_from_container:
+        enabled: true
+        max_mass_kg: 3.0
+        success_prior: 0.78
+        preferred_grasp_regions:
+          drill: [handle]
+      place_object_on_shelf:
+        enabled: true
+        min_height_m: 0.45
+        max_height_m: 1.65
+        max_mass_kg: 3.0
+        success_prior: 0.86
+      verify_object_pose:
+        enabled: true
+        success_prior: 0.95
+      detect_container:
+        enabled: true
+        success_prior: 0.84
+        supported_types: [tote, tool_box]
+      transport_container:
+        enabled: false
+      grasp_container:
+        enabled: false

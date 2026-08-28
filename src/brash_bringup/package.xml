@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>brash_bringup</name>
+  <version>0.1.0</version>
+  <description>Launch files and shared configuration for bringing up BrashOrchestrator.</description>
+  <maintainer email="robotics@brash.dev">Brash Robotics</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>brash_orchestrator_core</exec_depend>
+  <exec_depend>brash_world_model</exec_depend>
+  <exec_depend>brash_safety_manager</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

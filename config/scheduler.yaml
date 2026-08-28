@@ -1,0 +1,63 @@
+# Capability-aware scheduler.
+#
+#   J(robot, action) = w_time   * estimated_duration_s / duration_normalizer_s
+#                    + w_energy * estimated_energy_wh  / energy_normalizer_wh
+#                    + w_risk   * execution_risk
+#                    + w_move   * reposition_cost
+#                    - w_succ   * predicted_success_probability
+#
+# The lowest valid cost wins. Ties break on robot_id so a plan is reproducible.
+# The winner is submitted to Fleet Control as a soft preference; fleet dispatch
+# may still substitute another eligible robot, which is intentional.
+
+weights:
+  w_time: 1.0
+  w_energy: 0.4
+  w_risk: 1.6
+  w_move: 0.8
+  w_succ: 2.5
+
+normalizers:
+  duration_normalizer_s: 300.0
+  energy_normalizer_wh: 60.0
+  distance_normalizer_m: 50.0
+
+# Per-action duration estimate before any measured history exists.
+default_duration_s: 90.0
+duration_estimates:
+  locate_object: 60.0
+  inspect_target_shelf: 75.0
+  transport_container: 330.0
+  reposition_container: 150.0
+  open_container: 90.0
+  detect_tool_in_container: 55.0
+  pick_tool_from_container: 110.0
+  place_object_on_shelf: 95.0
+  verify_object_pose: 25.0
+  request_teleoperation: 600.0
+
+# Straight-line travel speed used to price repositioning, in metres per second.
+travel_speed_mps: 0.9
+
+# Risk contribution per action, before context adjustments.
+default_risk: 0.2
+risk_estimates:
+  transport_container: 0.35
+  reposition_container: 0.4
+  open_container: 0.3
+  pick_tool_from_container: 0.45
+  place_object_on_shelf: 0.35
+  request_teleoperation: 0.5
+
+# A candidate is ineligible below this battery level.
+min_battery_percent: 25.0
+
+# Risk ceilings applied from the task constraint max_risk.
+risk_ceilings:
+  low: 0.3
+  medium: 0.5
+  high: 1.0
+
+# Success probability below which a candidate is treated as ineligible rather
+# than merely expensive.
+min_success_probability: 0.35

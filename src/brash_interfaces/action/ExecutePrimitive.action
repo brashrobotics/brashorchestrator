@@ -1,0 +1,24 @@
+# Execute a single validated primitive. Used for bring-up, per-primitive
+# hardware testing, and recovery steps that bypass full graph interpretation.
+# This action never accepts natural language.
+
+# Goal
+string task_id
+string node_id
+string action_id
+string robot_id
+# Action parameters as a JSON object.
+string parameters_json
+float32 timeout_s
+bool dry_run
+---
+# Result
+bool success
+string error_code
+string observed_effects_json
+string metrics_json
+---
+# Feedback
+string execution_state
+float32 progress
+string event_json

@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brash-orchestrator"
+version = "0.1.0"
+description = "Capability-aware task planning, allocation, and execution platform for heterogeneous robot teams."
+requires-python = ">=3.11"
+dependencies = [
+    "PyYAML>=6.0",
+    "jsonschema>=4.20",
+    "aiohttp>=3.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+brash-orchestrator = "brash_orchestrator_core.cli:main"
+brash-orchestrator-console = "brash_orchestrator_core.web.__main__:main"
+
+# The ROS packages live under src/ as an ament workspace. For ROS-free
+# development and testing (any OS, no colcon required) the same sources are
+# importable through these package directories.
+[tool.setuptools.packages.find]
+where = ["src/brash_orchestrator_core", "src/brash_world_model", "src/brash_safety_manager"]
+include = ["brash_orchestrator_core*", "brash_world_model*", "brash_safety_manager*"]
+
+[tool.setuptools.package-data]
+"brash_orchestrator_core.web" = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [
+    "src/brash_orchestrator_core",
+    "src/brash_world_model",
+    "src/brash_safety_manager",
+    ".",
+]
+asyncio_mode = "auto"
+filterwarnings = ["error::DeprecationWarning"]

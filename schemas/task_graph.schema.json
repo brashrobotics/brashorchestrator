@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "brash.task-graph/v1",
+  "title": "Brash typed task graph",
+  "description": "The only structure an LLM is permitted to emit. Actions, parameters, and dependencies are all closed vocabularies validated after generation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task_id", "goal_predicate", "nodes"],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_.:-]+$"
+    },
+    "goal_predicate": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 256,
+      "description": "Measurable final condition, for example verified_at(drill_01, shelf_B12).",
+      "pattern": "^[a-z_][a-z0-9_]*\\([^()]*\\)$"
+    },
+    "rationale": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Free-text explanation retained for operator display only. Never parsed or executed."
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/node" }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 96,
+      "pattern": "^[A-Za-z0-9_.:-]+$"
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "action", "parameters", "required_capabilities", "depends_on"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^n[0-9]{1,3}$",
+          "description": "Node identifier. Sequential n1, n2, ... keeps generated graphs diffable."
+        },
+        "action": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "Must resolve to an entry in the Action Library. The validator rejects anything else."
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Action parameters. Keys and value types are checked against the Action Library signature.",
+          "additionalProperties": {
+            "oneOf": [
+              { "$ref": "#/$defs/identifier" },
+              { "type": "number" },
+              { "type": "boolean" }
+            ]
+          }
+        },
+        "required_capabilities": {
+          "type": "array",
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "description": "Robot-independent capability names. Never a robot identifier."
+        },
+        "depends_on": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^n[0-9]{1,3}$" }
+        },
+        "proposed_robot_id": {
+          "$ref": "#/$defs/identifier",
+          "description": "Optional LLM suggestion. The scheduler owns the final decision and may ignore it."
+        }
+      }
+    }
+  }
+}

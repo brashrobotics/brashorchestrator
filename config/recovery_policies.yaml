@@ -1,0 +1,184 @@
+# Recovery policies.
+#
+# The planner builds a closed candidate list from the policy that matches the
+# reported error code. The LLM may only rank those candidates; it can never
+# introduce an action that is not listed here. If a policy yields no candidate,
+# or the LLM picks something that is not on the list, the task fails honestly
+# rather than improvising.
+#
+# Strategies
+#   retry              re-run the same node with the same assignment
+#   reassign           re-run the node, excluding the robot that just failed
+#   insert_before      insert a new node the failed node then depends on
+#   alternate_target   re-run the node with one parameter replaced
+#   escalate           hand the decision to an operator
+#   abort              give up on the task
+#
+# max_attempts is per node and counts the original attempt.
+
+defaults:
+  max_attempts: 3
+  max_recovery_actions_per_task: 6
+  # Consult the LLM to rank candidates only when there is more than one.
+  use_llm_ranking: true
+
+policies:
+  LID_NOT_ACCESSIBLE:
+    candidates:
+      - candidate_id: reposition_then_retry
+        strategy: insert_before
+        action: reposition_container
+        parameters:
+          container_id: "$failed.container_id"
+          yaw_change_deg: "$observation.recommended_yaw_change_deg|90"
+        rationale: >-
+          A robot with container-repositioning capability rotates the box so the
+          lid faces the manipulator, then the original open attempt repeats.
+      - candidate_id: retry_open
+        strategy: retry
+        rationale: Perception may have been momentarily occluded.
+      - candidate_id: escalate_lid
+        strategy: escalate
+        rationale: Ask the operator to present the lid manually.
+
+  OBJECT_POSE_UNCERTAIN:
+    candidates:
+      - candidate_id: relocate_object
+        strategy: insert_before
+        action: detect_tool_in_container
+        parameters:
+          object_id: "$failed.object_id"
+          container_id: "$failed.container_id"
+        rationale: Re-run tool detection from a different viewpoint.
+      - candidate_id: reposition_container_for_view
+        strategy: insert_before
+        action: reposition_container
+        parameters:
+          container_id: "$failed.container_id"
+          yaw_change_deg: 45
+        rationale: Slightly rotate the container to expose the grasp region.
+      - candidate_id: reassign_pick
+        strategy: reassign
+        rationale: Another robot may have a better sensor viewpoint.
+      - candidate_id: teleoperate_pick
+        strategy: insert_before
+        action: request_teleoperation
+        parameters:
+          object_id: "$failed.object_id"
+          reason: object_pose_uncertain
+        requires_constraint: allow_teleoperation
+        rationale: An authorized operator resolves the grasp in a recorded session.
+      - candidate_id: escalate_pose
+        strategy: escalate
+        rationale: Transport to the exception station requires an operator decision.
+
+  TARGET_OCCUPIED:
+    candidates:
+      - candidate_id: alternate_shelf
+        strategy: alternate_target
+        parameter: shelf_id
+        # Inventory policy. Only these shelves may substitute for one another.
+        allowed_values: [shelf_B13, shelf_B14]
+        rationale: Inventory policy permits an adjacent shelf in the same bay.
+      - candidate_id: escalate_occupied
+        strategy: escalate
+        rationale: >-
+          No permitted alternative exists, so an operator decides. The task is
+          never reported complete without verification.
+
+  GRASP_FAILED:
+    candidates:
+      - candidate_id: retry_grasp
+        strategy: retry
+        rationale: Grasp failures are frequently transient.
+      - candidate_id: relocate_before_grasp
+        strategy: insert_before
+        action: locate_object
+        parameters:
+          object_id: "$failed.object_id"
+        rationale: Refresh the object pose before grasping again.
+      - candidate_id: reassign_grasp
+        strategy: reassign
+        rationale: Try a robot with a different end effector.
+
+  SLIP_DETECTED:
+    candidates:
+      - candidate_id: relocate_after_slip
+        strategy: insert_before
+        action: locate_object
+        parameters:
+          object_id: "$failed.object_id"
+        rationale: The object moved, so its pose must be re-established.
+      - candidate_id: escalate_slip
+        strategy: escalate
+        rationale: A dropped tool may need inspection before another attempt.
+
+  PATH_BLOCKED:
+    candidates:
+      - candidate_id: retry_path
+        strategy: retry
+        rationale: Fleet traffic management may clear the route on its own.
+      - candidate_id: reassign_path
+        strategy: reassign
+        rationale: Another robot may hold a route the fleet can schedule now.
+
+  OBJECT_NOT_FOUND:
+    candidates:
+      - candidate_id: retry_detection
+        strategy: retry
+        rationale: Widen the search from the same station.
+      - candidate_id: escalate_missing
+        strategy: escalate
+        rationale: The object is not where the world model believed it was.
+
+  ROBOT_FAULT:
+    candidates:
+      - candidate_id: reassign_faulted
+        strategy: reassign
+        # A carried payload must be physically confirmed released before another
+        # robot is sent, so reassignment is blocked while the robot holds it.
+        require_payload_released: true
+        rationale: Move the work to another eligible robot.
+      - candidate_id: escalate_fault
+        strategy: escalate
+        rationale: The faulted robot still holds the payload.
+
+  COMMUNICATION_LOST:
+    candidates:
+      - candidate_id: retry_after_comms
+        strategy: retry
+        rationale: Re-establish the work order once the fleet reports the robot online.
+      - candidate_id: reassign_comms
+        strategy: reassign
+        require_payload_released: true
+        rationale: Hand the work to a reachable robot.
+
+  TIMEOUT:
+    candidates:
+      - candidate_id: retry_timeout
+        strategy: retry
+        rationale: One further attempt within the task deadline.
+      - candidate_id: reassign_timeout
+        strategy: reassign
+        require_payload_released: true
+        rationale: The assigned robot is too slow for the remaining deadline.
+
+  PAYLOAD_LIMIT_EXCEEDED:
+    candidates:
+      - candidate_id: reassign_payload
+        strategy: reassign
+        rationale: Only a robot with sufficient payload capacity may continue.
+
+  HUMAN_IN_SAFETY_ZONE:
+    candidates:
+      - candidate_id: retry_after_zone_clear
+        strategy: retry
+        rationale: >-
+          Wait for the safety zone to clear. The safety manager, not the LLM,
+          decides when execution may resume.
+
+  TARGET_UNREACHABLE:
+    candidates:
+      - candidate_id: escalate_unreachable
+        strategy: escalate
+        rationale: No route exists to the target.

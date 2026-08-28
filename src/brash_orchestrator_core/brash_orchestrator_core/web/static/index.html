@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BrashOrchestrator Console</title>
+<link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">Brash<em>Orchestrator</em></div>
+  <div class="chips" id="chips"></div>
+  <div class="connection" id="connection">
+    <span class="dot"></span><span data-role="text">connecting</span>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- ------------------------------------------------ compose -->
+  <aside class="column column-compose">
+    <section class="card">
+      <h2>Goal</h2>
+      <textarea id="goal" rows="4" spellcheck="false"
+        placeholder="Take the drill from the tool box in the maintenance area and place it on shelf B12."></textarea>
+      <div class="examples" id="examples"></div>
+
+      <div class="field">
+        <label>Mode</label>
+        <div class="segmented" id="modes">
+          <button type="button" data-mode="plan">Plan</button>
+          <button type="button" data-mode="dry_run">Dry run</button>
+          <button type="button" data-mode="execute" class="active">Execute</button>
+        </div>
+        <p class="hint" id="mode-hint"></p>
+      </div>
+
+      <details class="constraints">
+        <summary>Constraints</summary>
+        <div class="field">
+          <label for="deadline">Deadline (seconds)</label>
+          <input id="deadline" type="number" min="1" step="1" placeholder="none" />
+        </div>
+        <div class="field">
+          <label for="max-risk">Risk ceiling</label>
+          <select id="max-risk">
+            <option value="">any</option>
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="check">
+            <input id="allow-teleoperation" type="checkbox" />
+            Allow teleoperation as a recovery option
+          </label>
+        </div>
+        <div class="field">
+          <label>Restrict to robots</label>
+          <div class="robot-picker" id="robot-picker"></div>
+        </div>
+      </details>
+
+      <div class="submit-row">
+        <button id="submit" class="primary">Execute</button>
+        <button id="cancel" class="danger" disabled>Cancel</button>
+      </div>
+      <p class="notice" id="notice" hidden></p>
+    </section>
+
+    <section class="card">
+      <h2>Safety approvals</h2>
+      <p class="hint">Tokens the safety manager requires before entering an
+        approval zone or exceeding a policy limit.</p>
+      <div class="approvals" id="approvals"></div>
+      <form class="inline-form" id="approval-form">
+        <input id="approval-token" placeholder="approval token" spellcheck="false" />
+        <button type="submit">Grant</button>
+      </form>
+    </section>
+
+    <section class="card grow">
+      <h2>Tasks</h2>
+      <ul class="tasks" id="tasks"></ul>
+    </section>
+  </aside>
+
+  <!-- ------------------------------------------------ plan -->
+  <section class="column column-plan">
+    <div class="card summary" id="summary"></div>
+
+    <div class="card grow">
+      <h2>Task graph <small id="graph-note"></small></h2>
+      <div class="graph" id="graph"></div>
+    </div>
+
+    <div class="card">
+      <h2>Scheduler assignments</h2>
+      <div class="assignments" id="assignments"></div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------ inspector -->
+  <aside class="column column-inspector">
+    <nav class="tabs" id="tabs">
+      <button type="button" data-tab="events" class="active">Events</button>
+      <button type="button" data-tab="llm">LLM</button>
+      <button type="button" data-tab="world">World</button>
+      <button type="button" data-tab="dev" hidden>Dev</button>
+    </nav>
+
+    <div class="pane active" data-pane="events">
+      <div class="pane-head">
+        <label class="check">
+          <input id="failures-only" type="checkbox" /> failures only
+        </label>
+        <span class="counter" id="event-count">0 events</span>
+      </div>
+      <ol class="feed" id="feed"></ol>
+    </div>
+
+    <div class="pane" data-pane="llm">
+      <div id="llm-summary" class="llm-summary"></div>
+      <div id="llm-attempts" class="attempts"></div>
+    </div>
+
+    <div class="pane" data-pane="world">
+      <div id="world" class="world"></div>
+    </div>
+
+    <div class="pane" data-pane="dev">
+      <p class="dev-banner">
+        Developer surface. The execution backend exposes a fault-injection
+        control surface, which means it is a stand-in, not a production fleet.
+      </p>
+      <form class="dev-form" id="fault-form">
+        <div class="field">
+          <label for="fault-primitive">Primitive</label>
+          <select id="fault-primitive"></select>
+        </div>
+        <div class="field">
+          <label for="fault-code">Reported failure</label>
+          <select id="fault-code"></select>
+        </div>
+        <div class="field two">
+          <div>
+            <label for="fault-node">Node id (optional)</label>
+            <input id="fault-node" placeholder="any node" spellcheck="false" />
+          </div>
+          <div>
+            <label for="fault-remaining">Times</label>
+            <input id="fault-remaining" type="number" min="1" value="1" />
+          </div>
+        </div>
+        <label class="check">
+          <input id="fault-unverifiable" type="checkbox" />
+          Report the action as done but unverifiable
+        </label>
+        <button type="submit" class="primary">Inject fault</button>
+      </form>
+      <div class="dev-actions">
+        <button type="button" id="reset">Reload scenario and clear faults</button>
+      </div>
+      <p class="hint">Faults are consumed in order, so injecting
+        <code>LID_NOT_ACCESSIBLE</code> once on <code>open_container</code> makes
+        the first attempt fail and the retry after repositioning succeed.</p>
+    </div>
+  </aside>
+
+</main>
+
+<script src="/static/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Register or update a robot in the capability registry at runtime. Adding a new
+# robot must never require a change to the core planner.
+
+string robot_id
+string type
+string vendor
+string adapter
+string frame_id
+string status_topic
+
+# Capability manifest as YAML or JSON, matching the config/robots.yaml shape.
+string capability_manifest
+---
+bool accepted
+string reject_reason
+Capability[] registered_capabilities

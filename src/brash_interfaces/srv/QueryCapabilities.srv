@@ -1,0 +1,17 @@
+# Ask which robots can perform a capability under the given limits.
+
+# Leave empty to query every robot.
+string robot_id
+
+# Leave empty to return every capability.
+string capability_name
+
+# Optional filters. A non-positive value disables the filter.
+float32 required_mass_kg
+float32 required_height_m
+---
+string[] robot_ids
+Capability[] capabilities
+
+# Parallel to robot_ids. Empty string means eligible.
+string[] ineligibility_reasons

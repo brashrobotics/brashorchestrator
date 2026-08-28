@@ -1,0 +1,92 @@
+# Initial world model for the flagship drill scenario.
+#
+# fleet_map_id follows brashfleetcontrol's mapId format, {family}@{revision},
+# which is the same shape as a brashtwinstudio release identity. When a Twin Map
+# Bundle is loaded, station coordinates below are overwritten by the bundle and
+# any location the bundle does not know is reported as ungrounded.
+
+fleet_map_id: demo-plant@1
+
+locations:
+  charging_area_b2w:
+    floor: 0
+    type: charging_station
+    station_id: CHG-B2W-01
+    x: 2.0
+    y: 3.0
+  humanoid_station:
+    floor: 1
+    type: charging_station
+    station_id: CHG-G1-01
+    x: 41.0
+    y: 12.0
+  maintenance_area:
+    floor: 0
+    type: work_area
+    station_id: MAINT-01
+    x: 8.5
+    y: 4.0
+    sensor_coverage: true
+  handover_station_02:
+    floor: 1
+    type: robot_handover_fixture
+    station_id: HANDOVER-02
+    x: 36.0
+    y: 14.5
+    sensor_coverage: true
+  shelf_B12:
+    floor: 1
+    type: shelf
+    station_id: SHELF-B12
+    x: 52.0
+    y: 18.0
+    height_m: 1.20
+    free_space: true
+    sensor_coverage: true
+  exception_station:
+    floor: 1
+    type: work_area
+    station_id: EXC-01
+    x: 30.0
+    y: 22.0
+    sensor_coverage: true
+
+routes:
+  # Floors reachable from one another. route_available() fails for a destination
+  # on an unreachable floor, which is what stops a plan that assumes a lift the
+  # site does not have.
+  connected_floors: [[0, 1]]
+  blocked_locations: []
+
+objects:
+  box_07:
+    type: container
+    subtype: tool_box
+    location: maintenance_area
+    state: closed
+    mass_kg: 8.5
+    lid_type: hinged
+    lid_accessible: unknown
+    pose_known: false
+    contents: [drill_01]
+  drill_01:
+    type: power_tool
+    subtype: drill
+    location: box_07
+    relation: inside
+    mass_kg: 1.9
+    preferred_grasp_region: handle
+    grasp_region_visible: unknown
+    pose_known: false
+
+robots:
+  b2w_z1_01:
+    location: charging_area_b2w
+    availability: available
+    connection: online
+    battery_percent: 91
+  g1_brainco_01:
+    location: humanoid_station
+    availability: available
+    connection: online
+    battery_percent: 84
